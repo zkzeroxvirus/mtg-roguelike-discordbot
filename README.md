@@ -8,7 +8,10 @@ A Discord bot that automatically posts and updates player leaderboards from a Go
 - 📊 **Weighted Scoring System**: Smart scoring that values achievements, crypt buffs, tickets, and essence
 - 🔄 **Auto-Update**: Regularly refreshes leaderboard data at configurable intervals
 - 💾 **Persistent Messages**: Edits existing messages instead of spamming new ones
-- 🎨 **Rich Embeds**: Beautiful Discord embeds with medal emojis for top 3 players
+- ⚡ **Rate Limit Compliant**: Built-in delays to respect Discord API rate limits
+- 🎨 **Clean Display**: 
+  - Top 10: Score + unlock counts (simplified, no individual names)
+  - Ranks 11+: Score only for cleaner display
 - 🐳 **Docker Support**: Easy deployment with Docker and Docker Compose
 
 ## Scoring System
@@ -167,13 +170,36 @@ CRYPT_BUFF_WEIGHT = 5000    # Points per crypt buff
 TICKET_WEIGHT = 500         # Points per ticket
 ```
 
+### Customizing Rate Limits
+
+The bot includes rate limiting delays to comply with Discord API requirements. You can adjust these in `bot.py` if needed:
+
+```python
+RATE_LIMIT_DELAY = 1.0       # Delay between message operations (seconds)
+MESSAGE_EDIT_DELAY = 0.5     # Delay between consecutive edits (seconds)
+```
+
+**Note**: Discord allows approximately 5 messages per 5 seconds per channel. The default delays ensure compliance with these limits.
+
 ## Leaderboard Display
 
-The bot creates multiple embed messages:
+The bot creates multiple embed messages with a clean, easy-to-read format:
 
-1. **Top 10 Players**: Detailed view with all achievements, buffs, and tickets listed
-2. **Ranks 11-50**: Condensed view with summary statistics
-3. **Ranks 51+**: Additional condensed views in groups of 50
+1. **Top 10 Players**: Shows score and count of each unlock type (achievements, crypt buffs, tickets)
+   - Medal emojis for positions 1-3 (🥇🥈🥉)
+   - Clean format: Score + unlock counts only
+2. **Ranks 11-50**: Condensed view showing only player name and score
+3. **Ranks 51+**: Additional condensed views in groups of 50, score only
+
+The leaderboard refreshes automatically at the configured interval (default: 5 minutes).
+
+### Rate Limiting
+
+The bot implements Discord API best practices:
+- 1 second delay between message posts
+- 0.5 second delay between message edits
+- Automatic delays to prevent rate limiting (429 errors)
+- Built-in error handling and retry logic
 
 ## Troubleshooting
 

@@ -6,6 +6,10 @@ import discord
 from discord.ext import tasks
 import gspread
 
+# Rate limiting constants
+RATE_LIMIT_DELAY = 1.0  # Delay between message operations (seconds)
+MESSAGE_EDIT_DELAY = 0.5  # Delay between consecutive edits (seconds)
+
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger("leaderboard-bot")
 
@@ -162,18 +166,17 @@ def rank_display(i: int) -> str:
         return f"{i}."
 
 def format_detailed_entry(idx: int, r: Dict[str, Any]) -> str:
-    ach_names = nonzero_names(r["ach_dict"])
-    buff_names = nonzero_names(r["buff_dict"])
-    ticket_names = nonzero_names(r["ticket_dict"])
+    """Format top 10 entry with score and unlock counts only."""
     return (
-        f"**Score: {r['score']:,.0f}** ({r['essence']:.0f} Essence | {r['total_unlocks']} Unlocks)\n"
-        f"🏆 {describe_named_list('Achievements', ach_names)}\n"
-        f"🗝️ {describe_named_list('Crypt Buffs', buff_names)}\n"
-        f"🎟️ {describe_named_list('Tickets', ticket_names)}"
+        f"**Score: {r['score']:,.0f}**\n"
+        f"🏆 Achievements: {r['ach_count']} | "
+        f"🗝️ Crypt Buffs: {r['buff_count']} | "
+        f"🎟️ Tickets: {r['ticket_count']}"
     )
 
 def format_condensed_entry(idx: int, r: Dict[str, Any]) -> str:
-    return f"{idx}. **{r['name']}** — Score: {r['score']:,.0f} ({r['ach_count']} Ach | {r['buff_count']} Buffs | {r['ticket_count']} Tix | {r['essence']:.0f} Ess)"
+    """Format ranks 11+ with only score."""
+    return f"{idx}. **{r['name']}** — Score: {r['score']:,.0f}"
 
 def chunk_lines_by_chars(lines: List[str], max_chars: int = 950) -> List[List[str]]:
     chunks = []
@@ -207,7 +210,7 @@ def build_embeds(rows: List[Dict[str, Any]]) -> List[discord.Embed]:
     if top_10:
         embed1 = discord.Embed(
             title="📊 Player Records — Top 10",
-            description=f"Ranked by weighted score: Achievements (×{ACHIEVEMENT_WEIGHT:,}) + Buffs (×{CRYPT_BUFF_WEIGHT:,}) + Tickets (×{TICKET_WEIGHT}) + Essence\nRefreshes every {UPDATE_INTERVAL_SECONDS // 60} min",
+            description=f"Refreshes every {UPDATE_INTERVAL_SECONDS // 60} minutes",
             color=0xFFD700,
         )
         for idx, r in enumerate(top_10, start=1):
@@ -270,34 +273,43 @@ async def post_or_update_leaderboard():
 
     ids_changed = False
 
-    # Ensure enough messages
+    # Ensure enough messages - add delay between posts to respect rate limits
     while len(message_ids) < len(embeds):
         try:
             msg = await channel.send(embed=embeds[len(message_ids)])
             message_ids.append(msg.id)
             logger.info("Posted new leaderboard message %d. MESSAGE_ID=%s", len(message_ids), msg.id)
             ids_changed = True
+            # Add delay after posting to avoid rate limits
+            if len(message_ids) < len(embeds):
+                await asyncio.sleep(RATE_LIMIT_DELAY)
         except Exception as e:
             logger.exception("Failed to post new leaderboard message: %s", e)
             return
 
-    # Update existing
+    # Update existing - add delays between edits
     for i, embed in enumerate(embeds):
         if i < len(message_ids):
             try:
                 msg = await channel.fetch_message(message_ids[i])
+                await asyncio.sleep(MESSAGE_EDIT_DELAY)  # Delay before edit
                 await msg.edit(embed=embed)
                 logger.info("Updated leaderboard message %d (%s)", i + 1, message_ids[i])
+                # Add delay between consecutive edits
+                if i < len(embeds) - 1:
+                    await asyncio.sleep(MESSAGE_EDIT_DELAY)
             except Exception as e:
                 logger.warning("Could not edit message %s: %s", message_ids[i], e)
 
-    # Delete extras
+    # Delete extras - add delay before deletions
     if len(message_ids) > len(embeds):
+        await asyncio.sleep(RATE_LIMIT_DELAY)
         for mid in message_ids[len(embeds):]:
             try:
                 msg = await channel.fetch_message(mid)
                 await msg.delete()
                 logger.info("Deleted extra leaderboard message %s", mid)
+                await asyncio.sleep(MESSAGE_EDIT_DELAY)  # Delay between deletions
             except Exception as e:
                 logger.warning("Could not delete message %s: %s", mid, e)
         message_ids = message_ids[:len(embeds)]
