@@ -1,0 +1,272 @@
+# MTG Roguelike Discord Bot
+
+A Discord bot that automatically posts and updates player leaderboards from a Google Sheets spreadsheet. Designed for tracking MTG (Magic: The Gathering) Roguelike game progress with weighted scoring based on achievements, crypt buffs, tickets, and essence.
+
+## Features
+
+- 🏆 **Automated Leaderboard**: Automatically fetches player data from Google Sheets and posts ranked leaderboards
+- 📊 **Weighted Scoring System**: Smart scoring that values achievements, crypt buffs, tickets, and essence
+- 🔄 **Auto-Update**: Regularly refreshes leaderboard data at configurable intervals
+- 💾 **Persistent Messages**: Edits existing messages instead of spamming new ones
+- 🎨 **Rich Embeds**: Beautiful Discord embeds with medal emojis for top 3 players
+- 🐳 **Docker Support**: Easy deployment with Docker and Docker Compose
+
+## Scoring System
+
+The bot uses a weighted scoring formula to rank players:
+
+- **Achievements**: 50,000 points each (hardest to obtain)
+- **Crypt Buffs**: 5,000 points each (from defeating crypt bosses)
+- **Tickets**: 500 points each (expensive investments)
+- **Essence**: 1 point per essence
+
+**Formula**: `Score = (Achievements × 50,000) + (Buffs × 5,000) + (Tickets × 500) + Essence`
+
+## Prerequisites
+
+- Python 3.11+ (for local setup)
+- Docker and Docker Compose (for Docker setup)
+- A Discord Bot Token
+- A Google Sheets API service account
+- Access to a Google Sheet with player data
+
+## Quick Start (Docker - Recommended)
+
+### 1. Clone the Repository
+
+```bash
+git clone https://github.com/zkzeroxvirus/mtg-roguelike-discordbot.git
+cd mtg-roguelike-discordbot
+```
+
+### 2. Set Up Google Sheets API
+
+1. Go to [Google Cloud Console](https://console.cloud.google.com/)
+2. Create a new project or select an existing one
+3. Enable the Google Sheets API
+4. Create a service account and download the JSON credentials
+5. Save the credentials as `service_account.json` in the project directory
+6. Share your Google Sheet with the service account email (found in the JSON file)
+
+### 3. Create Discord Bot
+
+1. Go to [Discord Developer Portal](https://discord.com/developers/applications)
+2. Create a new application
+3. Go to the "Bot" section and create a bot
+4. Copy the bot token
+5. Enable "Message Content Intent" in the bot settings
+6. Invite the bot to your server with appropriate permissions (Send Messages, Embed Links, Read Message History, Manage Messages)
+
+### 4. Configure Environment Variables
+
+```bash
+cp .env.example .env
+```
+
+Edit `.env` and fill in your configuration:
+
+```env
+DISCORD_TOKEN=your_discord_bot_token_here
+SHEET_ID=your_google_sheet_id_here
+LEADERBOARD_CHANNEL_ID=your_channel_id_here
+UPDATE_INTERVAL_SECONDS=300
+```
+
+**How to get the Sheet ID:**
+- From the URL: `https://docs.google.com/spreadsheets/d/YOUR_SHEET_ID_HERE/edit`
+
+**How to get the Channel ID:**
+- Enable Developer Mode in Discord (User Settings > Advanced)
+- Right-click on the channel and select "Copy ID"
+
+### 5. Run with Docker Compose
+
+```bash
+docker-compose up -d
+```
+
+To view logs:
+```bash
+docker-compose logs -f
+```
+
+To stop the bot:
+```bash
+docker-compose down
+```
+
+To rebuild after changes:
+```bash
+docker-compose up -d --build
+```
+
+## Local Setup (Alternative)
+
+### 1. Install Dependencies
+
+```bash
+pip install -r requirements.txt
+```
+
+### 2. Set Environment Variables
+
+```bash
+export DISCORD_TOKEN="your_discord_bot_token"
+export SHEET_ID="your_google_sheet_id"
+export LEADERBOARD_CHANNEL_ID="your_channel_id"
+export UPDATE_INTERVAL_SECONDS="300"
+export GOOGLE_APPLICATION_CREDENTIALS="service_account.json"
+```
+
+### 3. Run the Bot
+
+```bash
+python bot.py
+```
+
+## Google Sheet Format
+
+The bot expects your Google Sheet to have the following columns:
+
+| Column | Name | Description |
+|--------|------|-------------|
+| B (2) | Player | Player name |
+| C (3) | Essence | Current essence amount |
+| F (6) | Achievements | Key:value pairs separated by `\|` (e.g., `ach1:1\|ach2:1`) |
+| G (7) | Crypt Buffs | Key:value pairs separated by `\|` (e.g., `buff1:1\|buff2:1`) |
+| H (8) | Tickets | Key:value pairs separated by `\|` (e.g., `ticket1:1\|ticket2:5`) |
+
+Example row:
+```
+Player: JohnDoe
+Essence: 12500
+Achievements: legendary_deck:1|perfect_run:1
+Crypt Buffs: boss_defeated:1|speed_buff:1
+Tickets: rare_ticket:3|epic_ticket:1
+```
+
+## Configuration
+
+### Environment Variables
+
+| Variable | Required | Default | Description |
+|----------|----------|---------|-------------|
+| `DISCORD_TOKEN` | Yes | - | Your Discord bot token |
+| `SHEET_ID` | Yes | - | Google Sheets spreadsheet ID |
+| `LEADERBOARD_CHANNEL_ID` | Yes | 0 | Discord channel ID for leaderboard |
+| `UPDATE_INTERVAL_SECONDS` | No | 300 | Update frequency in seconds (5 minutes) |
+| `GOOGLE_APPLICATION_CREDENTIALS` | No | service_account.json | Path to service account JSON |
+
+### Customizing Weights
+
+To adjust the scoring weights, edit the constants in `bot.py`:
+
+```python
+ACHIEVEMENT_WEIGHT = 50000  # Points per achievement
+CRYPT_BUFF_WEIGHT = 5000    # Points per crypt buff
+TICKET_WEIGHT = 500         # Points per ticket
+```
+
+## Leaderboard Display
+
+The bot creates multiple embed messages:
+
+1. **Top 10 Players**: Detailed view with all achievements, buffs, and tickets listed
+2. **Ranks 11-50**: Condensed view with summary statistics
+3. **Ranks 51+**: Additional condensed views in groups of 50
+
+## Troubleshooting
+
+### Bot doesn't start
+- Check that all environment variables are set correctly
+- Verify your Discord token is valid
+- Ensure the service account JSON file exists and is readable
+
+### Leaderboard doesn't update
+- Check that the bot has permissions in the channel
+- Verify the channel ID is correct
+- Look at the logs for error messages: `docker-compose logs -f`
+
+### Google Sheets errors
+- Ensure the service account has access to the sheet
+- Verify the Sheet ID is correct
+- Check that the sheet has the expected column structure
+
+### Permission errors
+The bot needs these Discord permissions:
+- View Channels
+- Send Messages
+- Embed Links
+- Read Message History
+- Manage Messages (to edit its own messages)
+
+## Data Persistence
+
+The bot stores message IDs in `/app/data/message_ids.txt` to track which messages to update. When using Docker, this directory is mounted as a volume to persist data across container restarts.
+
+## Development
+
+### Running Tests
+
+```bash
+python -m py_compile bot.py
+```
+
+### Code Style
+
+The codebase follows PEP 8 guidelines with:
+- Clear function documentation
+- Type hints for function parameters
+- Descriptive variable names
+- Consistent formatting
+
+## Docker Commands Reference
+
+```bash
+# Build the image
+docker-compose build
+
+# Start the bot
+docker-compose up -d
+
+# View logs
+docker-compose logs -f bot
+
+# Stop the bot
+docker-compose down
+
+# Restart the bot
+docker-compose restart
+
+# Rebuild and restart
+docker-compose up -d --build
+
+# Remove everything including volumes
+docker-compose down -v
+```
+
+## Security Notes
+
+⚠️ **Important Security Practices:**
+
+- Never commit your `.env` file or `service_account.json` to version control
+- Keep your Discord bot token secret
+- Regularly rotate your credentials
+- Use environment variables for all sensitive data
+- Restrict service account permissions to only what's needed
+
+## Contributing
+
+Contributions are welcome! Please feel free to submit a Pull Request.
+
+## License
+
+This project is open source and available under the MIT License.
+
+## Support
+
+For issues, questions, or contributions, please open an issue on GitHub.
+
+## Acknowledgments
+
+Built for the MTG Roguelike community to track player progress and achievements.
