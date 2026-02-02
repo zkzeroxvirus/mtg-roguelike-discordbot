@@ -2,7 +2,7 @@
 <Container version="2">
   <Name>mtg-roguelike-discord-bot</Name>
   <Repository>zkzeroxvirus/mtg-roguelike-discordbot:latest</Repository>
-  <Registry>https://github.com/zkzeroxvirus/mtg-roguelike-discordbot</Registry>
+  <Registry>https://hub.docker.com/</Registry>
   <Network>bridge</Network>
   <MyIP/>
   <Shell>sh</Shell>
