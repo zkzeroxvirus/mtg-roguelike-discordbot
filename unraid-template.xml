@@ -1,0 +1,56 @@
+<?xml version="1.0"?>
+<Container version="2">
+  <Name>mtg-roguelike-discord-bot</Name>
+  <Repository>zkzeroxvirus/mtg-roguelike-discordbot:latest</Repository>
+  <Registry>https://github.com/zkzeroxvirus/mtg-roguelike-discordbot</Registry>
+  <Network>bridge</Network>
+  <MyIP/>
+  <Shell>sh</Shell>
+  <Privileged>false</Privileged>
+  <Support>https://github.com/zkzeroxvirus/mtg-roguelike-discordbot/issues</Support>
+  <Project>https://github.com/zkzeroxvirus/mtg-roguelike-discordbot</Project>
+  <Overview>
+    A Discord bot that automatically posts and updates player leaderboards from a Google Sheets spreadsheet.
+    Designed for tracking MTG (Magic: The Gathering) Roguelike game progress with weighted scoring.
+    
+    Features:
+    - Automated leaderboard with weighted scoring
+    - Auto-update at configurable intervals
+    - Persistent messages (edits instead of spamming)
+    - Rate limit compliant
+    - Clean display formatting
+    
+    Setup Requirements:
+    1. Create a Discord bot and get the token
+    2. Set up Google Sheets API and download service_account.json
+    3. Place service_account.json in /mnt/user/appdata/mtg-discord-bot/
+    4. Configure environment variables below
+    5. Start the container
+  </Overview>
+  <Category>Network:Other Tools:</Category>
+  <WebUI/>
+  <TemplateURL>https://raw.githubusercontent.com/zkzeroxvirus/mtg-roguelike-discordbot/main/unraid-template.xml</TemplateURL>
+  <Icon>https://raw.githubusercontent.com/docker-library/docs/c350af05d3fac7b5c3f6327ac82fe4d990d8729c/python/logo.png</Icon>
+  <ExtraParams/>
+  <PostArgs/>
+  <CPUset/>
+  <DateInstalled/>
+  <DonateText/>
+  <DonateLink/>
+  <Requires>
+    Before starting this container:
+    1. Create a Discord bot at https://discord.com/developers/applications
+    2. Enable "Message Content Intent" for your bot
+    3. Set up Google Sheets API at https://console.cloud.google.com/
+    4. Download service_account.json and place it in /mnt/user/appdata/mtg-discord-bot/
+    5. Share your Google Sheet with the service account email
+  </Requires>
+  <Config Name="Data Directory" Target="/app/data" Default="/mnt/user/appdata/mtg-discord-bot/data" Mode="rw" Description="Persistent storage for message IDs" Type="Path" Display="always" Required="true" Mask="false">/mnt/user/appdata/mtg-discord-bot/data</Config>
+  <Config Name="Service Account JSON" Target="/app/service_account.json" Default="/mnt/user/appdata/mtg-discord-bot/service_account.json" Mode="ro" Description="Google Sheets service account credentials (must exist before starting)" Type="Path" Display="always" Required="true" Mask="false">/mnt/user/appdata/mtg-discord-bot/service_account.json</Config>
+  <Config Name="Discord Bot Token" Target="DISCORD_TOKEN" Default="" Mode="" Description="Your Discord bot token from https://discord.com/developers/applications" Type="Variable" Display="always" Required="true" Mask="true"/>
+  <Config Name="Google Sheet ID" Target="SHEET_ID" Default="" Mode="" Description="The ID from your Google Sheet URL (between /d/ and /edit)" Type="Variable" Display="always" Required="true" Mask="false"/>
+  <Config Name="Leaderboard Channel ID" Target="LEADERBOARD_CHANNEL_ID" Default="" Mode="" Description="Discord channel ID where leaderboard will be posted (enable Developer Mode in Discord to copy ID)" Type="Variable" Display="always" Required="true" Mask="false"/>
+  <Config Name="Update Interval" Target="UPDATE_INTERVAL_SECONDS" Default="300" Mode="" Description="How often to update the leaderboard in seconds (default: 300 = 5 minutes)" Type="Variable" Display="always" Required="false" Mask="false">300</Config>
+  <Config Name="Google Credentials Path" Target="GOOGLE_APPLICATION_CREDENTIALS" Default="/app/service_account.json" Mode="" Description="Path to service account JSON inside container (leave as default)" Type="Variable" Display="advanced" Required="false" Mask="false">/app/service_account.json</Config>
+  <Config Name="Timezone" Target="TZ" Default="UTC" Mode="" Description="Container timezone (e.g., America/New_York, Europe/London)" Type="Variable" Display="advanced" Required="false" Mask="false">UTC</Config>
+</Container>
