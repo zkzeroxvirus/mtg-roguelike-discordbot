@@ -14,6 +14,14 @@ services:
       - ./service_account.json:/app/service_account.json:ro
     environment:
       - GOOGLE_APPLICATION_CREDENTIALS=/app/service_account.json
-    # Optional: Uncomment to use specific timezone
-    # environment:
-    #   - TZ=America/New_York
+      # Optional: Uncomment to set specific timezone
+      # - TZ=America/New_York
+    # Resource limits (optional but recommended)
+    # deploy:
+    #   resources:
+    #     limits:
+    #       cpus: '0.5'
+    #       memory: 512M
+    #     reservations:
+    #       cpus: '0.25'
+    #       memory: 256M

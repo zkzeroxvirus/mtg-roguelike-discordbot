@@ -34,7 +34,7 @@ service_account.json
 
 # Data
 data/
-*.txt
+message_ids.txt
 
 # Documentation
 README.md
