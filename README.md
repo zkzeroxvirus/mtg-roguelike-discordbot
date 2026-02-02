@@ -33,7 +33,160 @@ The bot uses a weighted scoring formula to rank players:
 - A Google Sheets API service account
 - Access to a Google Sheet with player data
 
-## Quick Start (Docker - Recommended)
+## Quick Start (Unraid Docker - Recommended)
+
+### Option 1: Using Unraid Template (Easiest)
+
+1. **Download Required Files**
+   - Download `service_account.json` from your Google Cloud Console (see below)
+   - Create directory: `/mnt/user/appdata/mtg-discord-bot/`
+   - Save `service_account.json` to that directory
+
+2. **Add Template to Unraid**
+   - Download the template file from: `https://raw.githubusercontent.com/zkzeroxvirus/mtg-roguelike-discordbot/main/unraid-template.xml`
+   - Save it to `/boot/config/plugins/dockerMan/templates-user/` on your Unraid server
+   - Open Unraid web interface and go to **Docker** tab
+   - Reload the page in your browser (press F5 or Ctrl+R) to see the new template
+   - Click **Add Container** and select "MTG Roguelike Discord Bot" from the template dropdown
+   - Fill in the required environment variables (see step 5 below)
+   - Click **Apply**
+
+3. **Set Up Google Sheets API** (if not done already)
+   - Go to [Google Cloud Console](https://console.cloud.google.com/)
+   - Create a new project or select an existing one
+   - Enable the Google Sheets API
+   - Create a service account and download the JSON credentials as `service_account.json`
+   - Place the file in `/mnt/user/appdata/mtg-discord-bot/service_account.json`
+   - Share your Google Sheet with the service account email (found in the JSON file)
+
+4. **Create Discord Bot** (if not done already)
+   - Go to [Discord Developer Portal](https://discord.com/developers/applications)
+   - Create a new application
+   - Go to the "Bot" section and create a bot
+   - Copy the bot token
+   - Enable "Message Content Intent" in the bot settings
+   - Invite the bot to your server with appropriate permissions (Send Messages, Embed Links, Read Message History, Manage Messages)
+
+5. **Get Required IDs**
+
+**Sheet ID:**
+- From the URL: `https://docs.google.com/spreadsheets/d/YOUR_SHEET_ID_HERE/edit`
+
+**Channel ID:**
+- Enable Developer Mode in Discord (User Settings > Advanced)
+- Right-click on the channel and select "Copy ID"
+
+6. **Start and Verify**
+   - The container should start automatically
+   - Check logs for any errors
+   - Verify the bot appears online in Discord
+   - Check that the leaderboard updates in the specified channel
+
+### Option 2: Manual Installation via Unraid Web UI
+
+1. **Download Required Files** (if not done already)
+   - Download `service_account.json` from your Google Cloud Console (see Option 1, step 3)
+   - Save it to a location on your Unraid server (e.g., `/mnt/user/appdata/mtg-discord-bot/`)
+
+2. **Set Up Prerequisites** (if not done already)
+   - Follow steps 3-5 from Option 1 above to set up Google Sheets API and Discord Bot
+
+3. **Configure the Container**
+   - Open Unraid web interface
+   - Go to **Docker** tab
+   - Click **Add Container**
+   - Configure the following settings:
+
+4. **Container Configuration Details**
+
+**Container Settings:**
+```
+Name: mtg-roguelike-discord-bot
+Repository: zkzeroxvirus/mtg-roguelike-discordbot:latest
+
+Project URL: https://github.com/zkzeroxvirus/mtg-roguelike-discordbot
+Icon URL: (Leave blank or use a Discord/Python icon URL of your choice)
+
+Network Type: Bridge
+Console shell command: Shell
+
+Privileged: No
+```
+
+**Port Mappings:**
+```
+None required - this bot doesn't expose any ports
+```
+
+**Volume Mappings:**
+```
+Container Path: /app/data
+Host Path: /mnt/user/appdata/mtg-discord-bot/data
+Access Mode: Read/Write
+Description: Persistent storage for message IDs
+
+Container Path: /app/service_account.json
+Host Path: /mnt/user/appdata/mtg-discord-bot/service_account.json
+Access Mode: Read Only
+Description: Google Sheets service account credentials
+```
+
+**Environment Variables:**
+```
+Key: DISCORD_TOKEN
+Value: your_discord_bot_token_here
+Description: Your Discord bot token
+
+Key: SHEET_ID
+Value: your_google_sheet_id_here
+Description: Google Sheets spreadsheet ID
+
+Key: LEADERBOARD_CHANNEL_ID
+Value: your_channel_id_here
+Description: Discord channel ID for leaderboard
+
+Key: UPDATE_INTERVAL_SECONDS
+Value: 300
+Description: Update frequency in seconds (recommended: 300 = 5 minutes)
+
+Key: GOOGLE_APPLICATION_CREDENTIALS
+Value: /app/service_account.json
+Description: Path to service account JSON (use this default value)
+
+Key: TZ
+Value: UTC
+Description: Timezone - leave as UTC or set to your timezone (e.g., America/New_York, Europe/London)
+```
+
+5. **Get Required IDs** (if not already obtained)
+
+**Sheet ID:**
+- From the URL: `https://docs.google.com/spreadsheets/d/YOUR_SHEET_ID_HERE/edit`
+
+**Channel ID:**
+- Enable Developer Mode in Discord (User Settings > Advanced)
+- Right-click on the channel and select "Copy ID"
+
+6. **Start the Container**
+   - Click **Apply** to create and start the container
+   - View logs by clicking the container icon and selecting **Logs**
+
+7. **Verify Installation**
+   - Check the container logs for any errors
+   - Verify the bot appears online in your Discord server
+   - Check that the leaderboard updates in the specified channel
+
+### Updating the Container in Unraid
+
+To update to the latest version:
+1. Go to **Docker** tab
+2. Click **Check for Updates**
+3. If an update is available, click **Update** next to the container
+4. Or manually: Stop container > Force Update > Start container
+
+---
+
+## Alternative: Docker Compose Setup
 
 ### 1. Clone the Repository
 
@@ -42,7 +195,7 @@ git clone https://github.com/zkzeroxvirus/mtg-roguelike-discordbot.git
 cd mtg-roguelike-discordbot
 ```
 
-### 2. Set Up Google Sheets API
+### 2. Set Up Google Sheets API (if not done already)
 
 1. Go to [Google Cloud Console](https://console.cloud.google.com/)
 2. Create a new project or select an existing one
@@ -51,7 +204,7 @@ cd mtg-roguelike-discordbot
 5. Save the credentials as `service_account.json` in the project directory
 6. Share your Google Sheet with the service account email (found in the JSON file)
 
-### 3. Create Discord Bot
+### 3. Create Discord Bot (if not done already)
 
 1. Go to [Discord Developer Portal](https://discord.com/developers/applications)
 2. Create a new application
