@@ -1,5 +1,7 @@
-discord.py
-gspread
-google-auth
-google-auth-oauthlib
-google-auth-httplib2
+# Discord bot library
+discord.py==2.6.4
+
+# Google Sheets integration
+gspread==6.2.1
+google-auth==2.34.0
+google-auth-oauthlib==1.2.1

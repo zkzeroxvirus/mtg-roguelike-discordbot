@@ -6,7 +6,11 @@ import discord
 from discord.ext import tasks
 import gspread
 
-logging.basicConfig(level=logging. INFO)
+# Rate limiting constants
+RATE_LIMIT_DELAY = 1.0  # Delay between message operations (seconds)
+MESSAGE_EDIT_DELAY = 0.5  # Delay between consecutive edits (seconds)
+
+logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger("leaderboard-bot")
 
 # -------- Config from environment --------
@@ -32,39 +36,39 @@ ACHIEVEMENT_WEIGHT = 50000  # Hardest:  deck criteria + crypt win
 CRYPT_BUFF_WEIGHT = 5000    # Hard: beat crypt boss
 TICKET_WEIGHT = 500         # Expensive investment (1500-10000 Essence)
 
-intents = discord.Intents. default()
+intents = discord.Intents.default()
 intents.message_content = True
-client = discord. Client(intents=intents)
+client = discord.Client(intents=intents)
 
-message_ids:  List[int] = []
+message_ids: List[int] = []
 
 # -------- Persistence helpers --------
 def load_message_ids():
     global message_ids
-    try: 
+    try:
         if os.path.exists(MESSAGE_IDS_FILE):
             with open(MESSAGE_IDS_FILE, "r") as f:
                 content = f.read().strip()
                 if content:
-                    message_ids = [int(mid. strip()) for mid in content.split(",") if mid.strip()]
-                    logger.info("Loaded %d message IDs from file:  %s", len(message_ids), message_ids)
+                    message_ids = [int(mid.strip()) for mid in content.split(",") if mid.strip()]
+                    logger.info("Loaded %d message IDs from file: %s", len(message_ids), message_ids)
     except Exception as e:
         logger.warning("Could not load message IDs from file: %s", e)
 
 def save_message_ids():
     try:
-        os.makedirs(os.path. dirname(MESSAGE_IDS_FILE), exist_ok=True)
+        os.makedirs(os.path.dirname(MESSAGE_IDS_FILE), exist_ok=True)
         with open(MESSAGE_IDS_FILE, "w") as f:
-            f.write(",". join(map(str, message_ids)))
+            f.write(",".join(map(str, message_ids)))
         logger.info("Saved %d message IDs to file", len(message_ids))
-    except Exception as e: 
+    except Exception as e:
         logger.warning("Could not save message IDs to file: %s", e)
 
 # -------- Helpers --------
 def truncate(text: str, limit: int = 950) -> str:
     return text if len(text) <= limit else text[:limit - 3] + "..."
 
-def parse_kv_list(cell:  str) -> Dict[str, float]:
+def parse_kv_list(cell: str) -> Dict[str, float]:
     result = {}
     if not cell:
         return result
@@ -93,13 +97,13 @@ def sum_values(d: Dict[str, float]) -> float:
 def describe_named_list(label: str, names: List[str], max_show: int = 8) -> str:
     count = len(names)
     if count == 0:
-        return f"{label}:  0"
+        return f"{label}: 0"
     if count <= max_show:
         return f"{label}: {count} — {', '.join(names)}"
     return f"{label}: {count} — {', '.join(names[:max_show])}, +{count - max_show} more"
 
 def calculate_score(ach_count: int, buff_count: int, ticket_count: int, essence: float) -> float:
-    """Calculate weighted score:  Achievements × 50,000 + Buffs × 5,000 + Tickets × 500 + Essence"""
+    """Calculate weighted score: Achievements × 50,000 + Buffs × 5,000 + Tickets × 500 + Essence"""
     return (ach_count * ACHIEVEMENT_WEIGHT) + (buff_count * CRYPT_BUFF_WEIGHT) + (ticket_count * TICKET_WEIGHT) + essence
 
 def build_leaderboard_rows(sheet) -> List[Dict[str, Any]]:
@@ -108,7 +112,7 @@ def build_leaderboard_rows(sheet) -> List[Dict[str, Any]]:
         return []
 
     rows = []
-    for row in data[1:]: 
+    for row in data[1:]:
         def get(col_idx: int) -> str:
             return row[col_idx - 1] if len(row) >= col_idx else ""
 
@@ -119,7 +123,7 @@ def build_leaderboard_rows(sheet) -> List[Dict[str, Any]]:
         essence_raw = get(COL_ESSENCE)
         try:
             essence = float(essence_raw)
-        except ValueError: 
+        except ValueError:
             essence = 0
 
         achievements = parse_kv_list(get(COL_ACHIEVEMENTS))
@@ -140,7 +144,7 @@ def build_leaderboard_rows(sheet) -> List[Dict[str, Any]]:
             "buff_dict": crypt_buffs,
             "ticket_dict": tickets,
             "ach_count": ach_count,
-            "buff_count":  buff_count,
+            "buff_count": buff_count,
             "ticket_count": ticket_count,
             "total_unlocks": total_unlocks,
             "tickets_total": sum_values(tickets),
@@ -162,18 +166,17 @@ def rank_display(i: int) -> str:
         return f"{i}."
 
 def format_detailed_entry(idx: int, r: Dict[str, Any]) -> str:
-    ach_names = nonzero_names(r["ach_dict"])
-    buff_names = nonzero_names(r["buff_dict"])
-    ticket_names = nonzero_names(r["ticket_dict"])
+    """Format top 10 entry with score and unlock counts only."""
     return (
-        f"**Score:  {r['score']: ,.0f}** ({r['essence']:.0f} Essence | {r['total_unlocks']} Unlocks)\n"
-        f"🏆 {describe_named_list('Achievements', ach_names)}\n"
-        f"🗝️ {describe_named_list('Crypt Buffs', buff_names)}\n"
-        f"🎟️ {describe_named_list('Tickets', ticket_names)}"
+        f"**Score: {r['score']:,.0f}**\n"
+        f"🏆 Achievements: {r['ach_count']} | "
+        f"🗝️ Crypt Buffs: {r['buff_count']} | "
+        f"🎟️ Tickets: {r['ticket_count']}"
     )
 
 def format_condensed_entry(idx: int, r: Dict[str, Any]) -> str:
-    return f"{idx}. **{r['name']}** — Score: {r['score']:,.0f} ({r['ach_count']} Ach | {r['buff_count']} Buffs | {r['ticket_count']} Tix | {r['essence']:.0f} Ess)"
+    """Format ranks 11+ with only score."""
+    return f"{idx}. **{r['name']}** — Score: {r['score']:,.0f}"
 
 def chunk_lines_by_chars(lines: List[str], max_chars: int = 950) -> List[List[str]]:
     chunks = []
@@ -182,7 +185,7 @@ def chunk_lines_by_chars(lines: List[str], max_chars: int = 950) -> List[List[st
     for line in lines:
         add = line + "\n"
         if current and length + len(add) > max_chars:
-            chunks. append(current)
+            chunks.append(current)
             current = []
             length = 0
         current.append(line)
@@ -207,7 +210,7 @@ def build_embeds(rows: List[Dict[str, Any]]) -> List[discord.Embed]:
     if top_10:
         embed1 = discord.Embed(
             title="📊 Player Records — Top 10",
-            description=f"Ranked by weighted score:  Achievements (×{ACHIEVEMENT_WEIGHT: ,}) + Buffs (×{CRYPT_BUFF_WEIGHT:,}) + Tickets (×{TICKET_WEIGHT}) + Essence\nRefreshes every {UPDATE_INTERVAL_SECONDS // 60} min",
+            description=f"Refreshes every {UPDATE_INTERVAL_SECONDS // 60} minutes",
             color=0xFFD700,
         )
         for idx, r in enumerate(top_10, start=1):
@@ -232,12 +235,12 @@ def build_embeds(rows: List[Dict[str, Any]]) -> List[discord.Embed]:
     remaining = rows[50:]
     logical_group_size = 50
     for group_start in range(0, len(remaining), logical_group_size):
-        group = remaining[group_start:  group_start + logical_group_size]
+        group = remaining[group_start: group_start + logical_group_size]
         start_rank = 51 + group_start
         end_rank = start_rank + len(group) - 1
         lines = [format_condensed_entry(start_rank + i, r) for i, r in enumerate(group)]
         for chunk_idx, chunk in enumerate(chunk_lines_by_chars(lines), start=1):
-            embed = discord. Embed(
+            embed = discord.Embed(
                 title=f"📊 Player Records — Ranks {start_rank}-{end_rank}" + (f" (part {chunk_idx})" if chunk_idx > 1 else ""),
                 color=0xCD7F32,
             )
@@ -250,14 +253,14 @@ def build_embeds(rows: List[Dict[str, Any]]) -> List[discord.Embed]:
 def get_sheet_client():
     gc = gspread.service_account(filename=GOOGLE_CREDS_PATH)
     sh = gc.open_by_key(SHEET_ID)
-    return sh. sheet1
+    return sh.sheet1
 
 # -------- Post/update leaderboard logic --------
 async def post_or_update_leaderboard():
     global message_ids
     channel = client.get_channel(LEADERBOARD_CHANNEL_ID)
     if channel is None:
-        logger.error("Channel not found.  Check LEADERBOARD_CHANNEL_ID.")
+        logger.error("Channel not found. Check LEADERBOARD_CHANNEL_ID.")
         return
 
     try:
@@ -265,42 +268,51 @@ async def post_or_update_leaderboard():
         rows = build_leaderboard_rows(sheet)
         embeds = build_embeds(rows)
     except Exception as e:
-        logger.exception("Failed to build leaderboard:  %s", e)
+        logger.exception("Failed to build leaderboard: %s", e)
         return
 
     ids_changed = False
 
-    # Ensure enough messages
+    # Ensure enough messages - add delay between posts to respect rate limits
     while len(message_ids) < len(embeds):
         try:
             msg = await channel.send(embed=embeds[len(message_ids)])
-            message_ids. append(msg.id)
-            logger.info("Posted new leaderboard message %d.  MESSAGE_ID=%s", len(message_ids), msg.id)
+            message_ids.append(msg.id)
+            logger.info("Posted new leaderboard message %d. MESSAGE_ID=%s", len(message_ids), msg.id)
             ids_changed = True
+            # Add delay after posting to avoid rate limits
+            if len(message_ids) < len(embeds):
+                await asyncio.sleep(RATE_LIMIT_DELAY)
         except Exception as e:
-            logger. exception("Failed to post new leaderboard message: %s", e)
+            logger.exception("Failed to post new leaderboard message: %s", e)
             return
 
-    # Update existing
+    # Update existing - add delays between edits
     for i, embed in enumerate(embeds):
         if i < len(message_ids):
             try:
                 msg = await channel.fetch_message(message_ids[i])
+                await asyncio.sleep(MESSAGE_EDIT_DELAY)  # Delay before edit
                 await msg.edit(embed=embed)
                 logger.info("Updated leaderboard message %d (%s)", i + 1, message_ids[i])
+                # Add delay between consecutive edits
+                if i < len(embeds) - 1:
+                    await asyncio.sleep(MESSAGE_EDIT_DELAY)
             except Exception as e:
                 logger.warning("Could not edit message %s: %s", message_ids[i], e)
 
-    # Delete extras
+    # Delete extras - add delay before deletions
     if len(message_ids) > len(embeds):
+        await asyncio.sleep(RATE_LIMIT_DELAY)
         for mid in message_ids[len(embeds):]:
-            try: 
+            try:
                 msg = await channel.fetch_message(mid)
                 await msg.delete()
-                logger. info("Deleted extra leaderboard message %s", mid)
+                logger.info("Deleted extra leaderboard message %s", mid)
+                await asyncio.sleep(MESSAGE_EDIT_DELAY)  # Delay between deletions
             except Exception as e:
                 logger.warning("Could not delete message %s: %s", mid, e)
-        message_ids = message_ids[: len(embeds)]
+        message_ids = message_ids[:len(embeds)]
         ids_changed = True
 
     if ids_changed:
@@ -323,12 +335,12 @@ async def on_ready():
     load_message_ids()
     await post_or_update_leaderboard()
 
-    if not update_leaderboard. is_running():
+    if not update_leaderboard.is_running():
         update_leaderboard.start()
 
-if __name__ == "__main__": 
+if __name__ == "__main__":
     if not DISCORD_TOKEN:
         raise SystemExit("DISCORD_TOKEN is required")
-    if not SHEET_ID: 
+    if not SHEET_ID:
         raise SystemExit("SHEET_ID is required")
     client.run(DISCORD_TOKEN)

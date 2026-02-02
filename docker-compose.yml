@@ -1,0 +1,27 @@
+version: '3.8'
+
+services:
+  bot:
+    build: .
+    container_name: mtg-roguelike-discord-bot
+    restart: unless-stopped
+    env_file:
+      - .env
+    volumes:
+      # Persist message IDs across container restarts
+      - ./data:/app/data
+      # Mount Google service account credentials
+      - ./service_account.json:/app/service_account.json:ro
+    environment:
+      - GOOGLE_APPLICATION_CREDENTIALS=/app/service_account.json
+      # Optional: Uncomment to set specific timezone
+      # - TZ=America/New_York
+    # Resource limits (optional but recommended)
+    # deploy:
+    #   resources:
+    #     limits:
+    #       cpus: '0.5'
+    #       memory: 512M
+    #     reservations:
+    #       cpus: '0.25'
+    #       memory: 256M

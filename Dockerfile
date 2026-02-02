@@ -1,22 +1,27 @@
-FROM python:3.12-slim
+# Use official Python runtime as base image
+FROM python:3.11-slim
 
-# Create work directory
+# Set working directory
 WORKDIR /app
 
-# Install system dependencies (optional but often needed for google libs)
-RUN apt-get update && apt-get install -y \
-    build-essential \
-    curl \
-    && rm -rf /var/lib/apt/lists/*
+# Install system dependencies if needed (none required for this bot)
+# RUN apt-get update && apt-get install -y --no-install-recommends \
+#     && rm -rf /var/lib/apt/lists/*
 
-# Copy requirements first (better layer caching)
+# Create non-root user for security
+RUN useradd -m -u 1000 botuser && \
+    mkdir -p /app/data && \
+    chown -R botuser:botuser /app
+
+# Copy requirements and install dependencies
 COPY requirements.txt .
-
-# Install Python dependencies
 RUN pip install --no-cache-dir -r requirements.txt
 
-# Copy bot files
-COPY . .
+# Copy bot code
+COPY bot.py .
 
-# Run bot
-CMD ["python", "bot.py"]
+# Switch to non-root user
+USER botuser
+
+# Run the bot with unbuffered output (-u flag)
+CMD ["python", "-u", "bot.py"]
