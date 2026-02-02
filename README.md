@@ -45,11 +45,9 @@ The bot uses a weighted scoring formula to rank players:
 2. **Add Template to Unraid**
    - Open Unraid web interface
    - Go to **Docker** tab
-   - Click **Add Container**
-   - Click **Template repositories** at the bottom
-   - Add this template URL: `https://raw.githubusercontent.com/zkzeroxvirus/mtg-roguelike-discordbot/main/unraid-template.xml`
-   - Or manually download the template and place it in `/boot/config/plugins/dockerMan/templates-user/`
-   - Search for "MTG Roguelike Discord Bot" and select it
+   - At the bottom of the page, under "Template repositories", add this URL: `https://raw.githubusercontent.com/zkzeroxvirus/mtg-roguelike-discordbot/main/unraid-template.xml`
+   - Or manually download the template from GitHub and place it in `/boot/config/plugins/dockerMan/templates-user/` on your Unraid server
+   - Click **Add Container** and select "MTG Roguelike Discord Bot" from the template list
    - Fill in the required environment variables (see step 5 below)
    - Click **Apply**
 
@@ -108,8 +106,7 @@ Repository: zkzeroxvirus/mtg-roguelike-discordbot:latest
 (Or use: ghcr.io/zkzeroxvirus/mtg-roguelike-discordbot:latest)
 
 Docker Hub URL: https://github.com/zkzeroxvirus/mtg-roguelike-discordbot
-Icon URL: https://raw.githubusercontent.com/zkzeroxvirus/mtg-roguelike-discordbot/main/.github/icon.png
-(Optional: Use any Discord or MTG icon URL)
+Icon URL: (Leave blank or use a Discord/Python icon URL of your choice)
 
 Network Type: Bridge
 Console shell command: Shell
