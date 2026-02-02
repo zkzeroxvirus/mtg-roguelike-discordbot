@@ -104,7 +104,7 @@ Name: mtg-roguelike-discord-bot
 Repository: zkzeroxvirus/mtg-roguelike-discordbot:latest
 (Or use: ghcr.io/zkzeroxvirus/mtg-roguelike-discordbot:latest)
 
-Docker Hub URL: https://github.com/zkzeroxvirus/mtg-roguelike-discordbot
+Project URL: https://github.com/zkzeroxvirus/mtg-roguelike-discordbot
 Icon URL: (Leave blank or use a Discord/Python icon URL of your choice)
 
 Network Type: Bridge
