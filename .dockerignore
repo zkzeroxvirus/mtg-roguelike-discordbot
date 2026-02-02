@@ -36,6 +36,6 @@ service_account.json
 data/
 message_ids.txt
 
-# Documentation
+# Documentation (requirements.txt is intentionally NOT excluded - needed for Docker build)
 README.md
 LICENSE
